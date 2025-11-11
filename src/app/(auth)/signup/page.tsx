@@ -1,3 +1,5 @@
+"use client";
+
 import { LogoIcon } from '@/components/logo'
 import SocialProviders from '@/components/auth/social-providers'
 import { Button } from '@/components/ui/button'
@@ -5,8 +7,57 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import LoadingSwapButton from '@/components/sheard/loadingswap-button'
+import { FormEvent, useState } from 'react'
+import { authClient } from '@/lib/auth-client';
+import { toast } from 'sonner';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+export default function SignupPage() {
+
+    const [isLoading, setIsLoading] = useState(false)
+    const [formData, setFormData] = useState({
+        fullname: '',
+        email: '',
+        password: ''
+    })
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const from = searchParams.get("from");
+
+
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        setIsLoading(true)
+        try {
+            const { error } = await authClient.signUp.email({
+                email: formData.email,
+                password: formData.password,
+                name: formData.fullname,
+                callbackURL: from ?? "/"
+            })
+            if (error) {
+                toast.error(error.message || "Sign-up failed. Please try again.")
+                console.error("Sign-up error:", error)
+            } else {
+                toast.success("Sign-up successful!")
+                router.push(from ?? "/");
+            }
+        } catch (error) {
+            console.error("Sign-up error:", error)
+            toast.error("Sign-up failed. Please try again.")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }))
+    }
     return (
         <section className="flex min-h-screen bg-zinc-50 px-4 py-16 dark:bg-transparent">
             <div
@@ -26,20 +77,22 @@ export default function LoginPage() {
 
                     <hr className="my-4 border-dashed" />
 
-                    <form
-                        action=""
-                        className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
                             <Label
-                                htmlFor="firstname"
+                                htmlFor="fullname"
                                 className="block text-sm">
-                                Firstname
+                                Full Name
                             </Label>
                             <Input
                                 type="text"
                                 required
-                                name="firstname"
-                                id="firstname"
+                                name="fullname"
+                                id="fullname"
+                                placeholder='John Doe'
+                                value={formData.fullname}
+                                onChange={handleChange}
+                                disabled={isLoading}
                             />
                         </div>
 
@@ -47,32 +100,46 @@ export default function LoginPage() {
                             <Label
                                 htmlFor="email"
                                 className="block text-sm">
-                                Username
+                                Your Email
                             </Label>
                             <Input
                                 type="email"
                                 required
                                 name="email"
                                 id="email"
+                                placeholder='you@example.com'
+                                value={formData.email}
+                                onChange={handleChange}
+                                disabled={isLoading}
                             />
                         </div>
 
                         <div className="space-y-2">
                             <Label
-                                htmlFor="pwd"
+                                htmlFor="password"
                                 className="text-sm">
                                 Password
                             </Label>
                             <Input
                                 type="password"
                                 required
-                                name="pwd"
-                                id="pwd"
+                                name="password"
+                                id="password"
+                                placeholder='••••••••'
+                                value={formData.password}
+                                onChange={handleChange}
+                                disabled={isLoading}
                                 className="input sz-md variant-mixed"
                             />
                         </div>
 
-                        <LoadingSwapButton className="w-full">Continue</LoadingSwapButton>
+                        <LoadingSwapButton
+                            isLoading={isLoading}
+                            loadingText='Sign-up...'
+                            type="submit"
+                            className="w-full">
+                            Continue
+                        </LoadingSwapButton>
                     </form>
                 </div>
 
